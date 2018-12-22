@@ -29,6 +29,10 @@
   name = "github.com/gorilla/mux"
   version = "1.6.2"
 
+[[constraint]]
+  name = "gopkg.in/natefinch/lumberjack.v2"
+  version = "2.1.0"
+
 [prune]
   go-tests = true
   unused-packages = true
