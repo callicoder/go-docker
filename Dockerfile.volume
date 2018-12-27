@@ -25,8 +25,8 @@ COPY . .
 # Download dependencies
 RUN go get -d -v ./...
 
-# Build the Go app
-RUN go build -o ./out/go-docker .
+# Install the package
+RUN go install -v ./...
 
 # This container exposes port 8080 to the outside world
 EXPOSE 8080
@@ -35,4 +35,4 @@ EXPOSE 8080
 VOLUME ["/go-docker/logs"]
 
 # Run the binary program produced by `go install`
-CMD ["./out/go-docker"]
+CMD ["go-docker"]

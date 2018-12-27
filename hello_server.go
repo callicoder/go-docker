@@ -58,10 +58,10 @@ func main() {
 	}()
 
 	// Graceful Shutdown
-	gracefulShutdown(srv)
+	waitForShutdown(srv)
 }
 
-func gracefulShutdown(srv *http.Server) {
+func waitForShutdown(srv *http.Server) {
 	interruptChan := make(chan os.Signal, 1)
 	signal.Notify(interruptChan, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 

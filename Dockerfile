@@ -16,11 +16,11 @@ COPY . .
 # https://stackoverflow.com/questions/28031603/what-do-three-dots-mean-in-go-command-line-invocations
 RUN go get -d -v ./...
 
-# Build the package
-RUN go build -o ./out/go-docker .
+# Install the package
+RUN go install -v ./...
 
 # This container exposes port 8080 to the outside world
 EXPOSE 8080
 
 # Run the executable
-CMD ["./out/go-docker"]
+CMD ["go-docker"]
