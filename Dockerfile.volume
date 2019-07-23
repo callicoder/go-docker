@@ -1,14 +1,16 @@
 # Dockerfile References: https://docs.docker.com/engine/reference/builder/
 
-# Start from golang v1.11 base image
-FROM golang:1.11
+# Start from the latest golang base image
+FROM golang:latest
 
 # Add Maintainer Info
 LABEL maintainer="Rajeev Singh <callicoder@gmail.com>"
 
+# Set the Current Working Directory inside the container
+WORKDIR /app
+
 # Build Args
-ARG APP_NAME=go-docker
-ARG LOG_DIR=/${APP_NAME}/logs
+ARG LOG_DIR=/app/logs
 
 # Create Log Directory
 RUN mkdir -p ${LOG_DIR}
@@ -16,23 +18,17 @@ RUN mkdir -p ${LOG_DIR}
 # Environment Variables
 ENV LOG_FILE_LOCATION=${LOG_DIR}/app.log 
 
-# Set the Current Working Directory inside the container
-WORKDIR $GOPATH/src/github.com/callicoder/go-docker
-
-# Copy everything from the current directory to the PWD(Present Working Directory) inside the container
+# Copy everything from the current directory to the Working Directory inside the container
 COPY . .
 
-# Download dependencies
-RUN go get -d -v ./...
-
-# Install the package
-RUN go install -v ./...
+# Build the Go app
+RUN go build -o main .
 
 # This container exposes port 8080 to the outside world
 EXPOSE 8080
 
 # Declare volumes to mount
-VOLUME ["/go-docker/logs"]
+VOLUME [${LOG_DIR}]
 
 # Run the binary program produced by `go install`
-CMD ["go-docker"]
+CMD ["./main"]
