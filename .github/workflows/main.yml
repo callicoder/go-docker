@@ -27,7 +27,7 @@ jobs:
               --data '
               {
               "commitSha": "${{ github.sha }}",
-              "repositoryUrl": "${{ vars.REPOSITORY_VAR }}",
+              "repositoryUrl": "$GITHUB_REPOSITORY",
               "buildId": "${{ github.run_id }}"
               }')
         echo "$return_string"
