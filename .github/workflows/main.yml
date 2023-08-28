@@ -1,0 +1,51 @@
+name: Docker Build and Apiiro Scan
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Check out code from the repository
+    - name: Check out repository
+      uses: actions/checkout@v2
+
+    # Build the Docker image
+    - name: Build Docker image
+      run: docker build -t my-image:${{ github.run_id }} .
+
+    # Apiiro API Build Scan
+    - name: Apiiro API Build Scan
+      run: |
+        return_string=$(curl  -s --location 'https://app-staging.apiiro.com/rest-api/v1.0/buildScan/builds' \
+              --header 'Content-Type: application/json' \
+              --header 'Authorization: Bearer ${{ secrets.BEARER_TOKEN }}' \
+              --data '
+              {
+              "commitSha": "${{ github.sha }}",
+              "repositoryUrl": "${{ github.repository_url }}",
+              "buildId": "${{ github.run_id }}"
+              }')
+        echo "$return_string"
+        echo "RETURN_STRING=$return_string" >> $GITHUB_ENV
+      continue-on-error: true
+
+    # Apiiro API Results Scan
+    - name: Apiiro API Results Scan
+      run: |
+        response=$(curl -vv --insecure --retry 15 --retry-max-time 900 --retry-delay 45 --location --request GET 'https://app-staging.apiiro.com/rest-api/v1/buildScan/${{ env.RETURN_STRING }}/results' \
+        --header 'Content-Type: application/json' \
+        --header 'Authorization: Bearer ${{ secrets.BEARER_TOKEN }}')
+
+        echo "$response"
+
+        json_response=$(echo "$response" | grep '{"buildPassed"')
+        if [[ $(echo "$json_response" | jq '.buildPassed') == "false" ]]; then
+          echo "Pipeline failed due to Apiiro scan."
+          exit 1
+        fi
+
