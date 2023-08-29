@@ -6,7 +6,8 @@ on:
       - master
 
 jobs:
-  build:
+  docker-build:
+    name: Docker Build
     runs-on: ubuntu-latest
 
     steps:
@@ -18,6 +19,12 @@ jobs:
     - name: Build Docker image
       run: docker build -t my-image:${{ github.run_id }} .
 
+  apiiro-scan:
+    name: Apiiro Build Scan
+    runs-on: ubuntu-latest
+    needs: docker-build # Ensures this job runs only after 'docker-build' completes successfully
+
+    steps:
     # Apiiro API Build Scan
     - name: Apiiro API Build Scan
       run: |
@@ -50,4 +57,3 @@ jobs:
           echo "Pipeline failed due to Apiiro scan."
           exit 1
         fi
-
