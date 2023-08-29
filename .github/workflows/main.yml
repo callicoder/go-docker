@@ -32,7 +32,7 @@ jobs:
               }')
         echo "$return_string"
         echo "${{ github.sha }}"
-        echo "${{ github.run_id }}""
+        echo "${{ github.run_id }}"
         echo "RETURN_STRING=$return_string" >> $GITHUB_ENV
       continue-on-error: true
 
