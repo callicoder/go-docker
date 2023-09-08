@@ -1,5 +1,7 @@
 name: Docker Build and Apiiro Scan
 
+on:
+  workflow_dispatch:
 
 
 jobs:
