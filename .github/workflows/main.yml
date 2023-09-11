@@ -45,12 +45,18 @@ jobs:
     # Apiiro API Results Scan
     - name: Apiiro API Results Scan
       run: |
-        while true; do
-            # The -s flag makes curl silent. -S forces it to show errors, but it won't show progress or any other messages.
+       while true; do
             response=$(curl -sS --insecure --retry 15 --retry-max-time 900 --retry-delay 45 --location --request GET 'https://app-staging.apiiro.com/rest-api/v1/buildScan/${{ env.RETURN_STRING }}/results' \
             --header 'Content-Type: application/json' \
             --header 'Authorization: Bearer ${{ secrets.BEARER_TOKEN }}')
-    
+        
+            # Check if the response is valid JSON
+            if ! echo "$response" | jq empty 2>/dev/null; then
+                echo "Received an invalid JSON response. Waiting before the next check..."
+                sleep 5
+                continue
+            fi
+        
             # Check for HTTP 503 Service Unavailable
             if echo "$response" | grep -q "HTTP.*503"; then
                 echo "Scan is still in progress. Waiting for the next check..."
@@ -74,4 +80,3 @@ jobs:
                 fi
             fi
         done
-
