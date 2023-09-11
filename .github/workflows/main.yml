@@ -49,11 +49,22 @@ jobs:
         --header 'Content-Type: application/json' \
         --header 'Authorization: Bearer ${{ secrets.BEARER_TOKEN }}')
     
-        echo "$response"
-    
-        json_response=$(echo "$response" | grep '{"buildPassed"')
-        if [[ $(echo "$json_response" | jq '.buildPassed') == "false" ]]; then
-          echo "Pipeline failed due to Apiiro scan."
-          exit 1
-        fi
+                echo "$response"
+
+                # Check for HTTP 503 Service Unavailable
+                if echo "$response" | grep -q "HTTP.*503"; then
+                    echo "Scan is still in progress. Waiting for the next check..."
+                    sleep 5  # Wait 5 seconds before the next iteration
+                else
+                    # Check buildPassed status
+                    if echo "$response" | jq -e '.buildPassed' 2>/dev/null | grep -q "true"; then
+                        echo "Pipeline can continue. Apiiro scan passed."
+                        exit 0
+                    else
+                        echo "Unexpected JSON format or missing 'buildPassed' key."
+                        exit 1
+                    fi
+                fi
+            done
+
 
