@@ -45,26 +45,26 @@ jobs:
     # Apiiro API Results Scan
     - name: Apiiro API Results Scan
       run: |
-        response=$(curl -vv --insecure --retry 15 --retry-max-time 900 --retry-delay 45 --location --request GET 'https://app-staging.apiiro.com/rest-api/v1/buildScan/${{ env.RETURN_STRING }}/results' \
-        --header 'Content-Type: application/json' \
-        --header 'Authorization: Bearer ${{ secrets.BEARER_TOKEN }}')
+        while true; do
+            # The -s flag makes curl silent. -S forces it to show errors, but it won't show progress or any other messages.
+            response=$(curl -sS --insecure --retry 15 --retry-max-time 900 --retry-delay 45 --location --request GET 'https://app-staging.apiiro.com/rest-api/v1/buildScan/${{ env.RETURN_STRING }}/results' \
+            --header 'Content-Type: application/json' \
+            --header 'Authorization: Bearer ${{ secrets.BEARER_TOKEN }}')
     
-                echo "$response"
-
-                # Check for HTTP 503 Service Unavailable
-                if echo "$response" | grep -q "HTTP.*503"; then
-                    echo "Scan is still in progress. Waiting for the next check..."
-                    sleep 5  # Wait 5 seconds before the next iteration
+            # Check for HTTP 503 Service Unavailable
+            if echo "$response" | grep -q "HTTP.*503"; then
+                echo "Scan is still in progress. Waiting for the next check..."
+                sleep 5  # Wait 5 seconds before the next iteration
+            else
+                # Check buildPassed status
+                if echo "$response" | jq -e '.buildPassed' 2>/dev/null | grep -q "true"; then
+                    echo "Pipeline can continue. Apiiro scan passed."
+                    exit 0
                 else
-                    # Check buildPassed status
-                    if echo "$response" | jq -e '.buildPassed' 2>/dev/null | grep -q "true"; then
-                        echo "Pipeline can continue. Apiiro scan passed."
-                        exit 0
-                    else
-                        echo "Unexpected JSON format or missing 'buildPassed' key."
-                        exit 1
-                    fi
+                    echo "Unexpected JSON format or missing 'buildPassed' key."
+                    exit 1
                 fi
-            done
+            fi
+        done
 
 
