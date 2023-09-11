@@ -46,7 +46,7 @@ jobs:
     - name: Apiiro API Results Scan
       run: |
         response=$(curl -vv --insecure --retry 15 --retry-max-time 900 --retry-delay 45 --location --request GET 'https://app-staging.apiiro.com/rest-api/v1/buildScan/${{ env.RETURN_STRING }}/results' \
-        --header 'Accept: application/json' \
+        --header 'Content-Type: application/json' \
         --header 'Authorization: Bearer ${{ secrets.BEARER_TOKEN }}')
     
         echo "$response"
