@@ -56,6 +56,14 @@ jobs:
                 echo "Scan is still in progress. Waiting for the next check..."
                 sleep 5  # Wait 5 seconds before the next iteration
             else
+                # Print the API response summary and scan results
+                echo "API Response Summary:"
+                echo "$response" | jq -r '.summary'
+                echo "---------------------"
+                echo "API Scan Results:"
+                echo "$response" | jq -r '.scanResults[]'
+                echo "---------------------"
+                
                 # Check buildPassed status
                 if echo "$response" | jq -e '.buildPassed' 2>/dev/null | grep -q "true"; then
                     echo "Pipeline can continue. Apiiro scan passed."
@@ -66,5 +74,4 @@ jobs:
                 fi
             fi
         done
-
 
