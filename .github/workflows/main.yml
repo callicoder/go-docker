@@ -1,0 +1,82 @@
+name: Docker Build and Apiiro Scan
+
+on:
+  workflow_dispatch:
+
+
+jobs:
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+
+    steps:
+    # Check out code from the repository
+    - name: Check out repository
+      uses: actions/checkout@v2
+
+    # Build the Docker image
+    - name: Build Docker image
+      run: docker build -t my-image:${{ github.run_id }} .
+
+  apiiro-scan:
+    name: Apiiro Build Scan
+    runs-on: ubuntu-latest
+    needs: docker-build # Ensures this job runs only after 'docker-build' completes successfully
+
+    steps:
+    # Apiiro API Build Scan
+    - name: Apiiro API Build Scan
+      run: |
+        return_string=$(curl  -s --location 'https://app-staging.apiiro.com/rest-api/v1.0/buildScan/builds' \
+              --header 'Content-Type: application/json' \
+              --header 'Authorization: Bearer ${{ secrets.BEARER_TOKEN }}' \
+              --data '
+              {
+              "commitSha": "${{ github.sha }}",
+              "repositoryUrl": "https://github.com/davidl-apiiro/go-docker",
+              "buildId": "${{ github.run_id }}"
+              }')
+        echo "$return_string"
+        echo "${{ github.sha }}"
+        echo "${{ github.run_id }}"
+        echo "RETURN_STRING=$return_string" >> $GITHUB_ENV
+      continue-on-error: true
+
+    # Apiiro API Results Scan
+    - name: Apiiro API Results Scan
+      run: |
+       while true; do
+            response=$(curl -sS --insecure --retry 15 --retry-max-time 900 --retry-delay 45 --location --request GET 'https://app-staging.apiiro.com/rest-api/v1/buildScan/${{ env.RETURN_STRING }}/results' \
+            --header 'Content-Type: application/json' \
+            --header 'Authorization: Bearer ${{ secrets.BEARER_TOKEN }}')
+        
+            # Check if the response is valid JSON
+            if ! echo "$response" | jq empty 2>/dev/null; then
+                echo "Received an invalid JSON response. Waiting before the next check..."
+                sleep 5
+                continue
+            fi
+        
+            # Check for HTTP 503 Service Unavailable
+            if echo "$response" | grep -q "HTTP.*503"; then
+                echo "Scan is still in progress. Waiting for the next check..."
+                sleep 5  # Wait 5 seconds before the next iteration
+            else
+                # Print the API response summary and scan results
+                echo "API Response Summary:"
+                echo "$response" | jq -r '.summary'
+                echo "---------------------"
+                echo "API Scan Results:"
+                echo "$response" | jq -r '.scanResults[]'
+                echo "---------------------"
+                
+                # Check buildPassed status
+                if echo "$response" | jq -e '.buildPassed' 2>/dev/null | grep -q "true"; then
+                    echo "Pipeline can continue. Apiiro scan passed."
+                    exit 0
+                else
+                    echo "Unexpected JSON format or missing 'buildPassed' key."
+                    exit 1
+                fi
+            fi
+        done
